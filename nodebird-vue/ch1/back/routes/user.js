@@ -1,11 +1,12 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const passport = require('passport');
+const { isLoggedIn, isNotLoggedIn } = require('./middlewares');
 const db = require('../models');
 
 const router = express.Router();
 
-router.post('/',async(req,res,next)=>{
+router.post('/',isNotLoggedIn, async(req,res,next)=>{
     try {
         const hash = await bcrypt.hash(req.body.password,12);
         const exUser = await db.User.findOne({
@@ -48,7 +49,7 @@ router.post('/',async(req,res,next)=>{
     } 
 });
 
-router.post('/login',async (req,res,next) => {
+router.post('/login', isNotLoggedIn, async (req,res,next) => {
     passport.authenticate('local', (err, user, info)=>{
         if(err){
             console.error(err);
@@ -69,7 +70,7 @@ router.post('/login',async (req,res,next) => {
     // req.body가 알아서 쿠키를 내려줌
 });
 
-router.post('/logout',(req,res)=>{  // 실제 주소는 /user/logout
+router.post('/logout', isLoggedIn, (req,res)=>{  // 실제 주소는 /user/logout
     console.log('로그아웃 요청');
     if(req.isAuthenticated()){
         console.log('로그아웃!');

@@ -9,6 +9,7 @@ const db = require('./models');
 const passportConfig = require('./passport');
 const morgan = require('morgan');
 const userRouter = require('./routes/user');
+const postRouter = require('./routes/post');
 
 const app = express();
 
@@ -16,6 +17,7 @@ db.sequelize.sync();
 passportConfig();
 
 // 미들웨어는 req,res를 조작한다 !!
+app.use('/',express.static('uploads'));
 app.use(morgan('dev'));
 app.use(cors({
     origin: 'http://localhost:3000',
@@ -41,7 +43,7 @@ app.get('/',(req,res)=>{
     res.status(200).send('안녕 백엔드');
 });
 app.use('/user',userRouter);
-
+app.use('/post',postRouter);
 
 app.listen(3085,()=>{
     console.log(`백엔드 서버 ${3085}번 포트에서 작동중.`);
