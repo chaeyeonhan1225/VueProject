@@ -10,6 +10,7 @@ const passportConfig = require('./passport');
 const morgan = require('morgan');
 const userRouter = require('./routes/user');
 const postRouter = require('./routes/post');
+const postsRouter = require('./routes/posts');
 
 const app = express();
 
@@ -20,7 +21,7 @@ passportConfig();
 app.use('/',express.static('uploads'));
 app.use(morgan('dev'));
 app.use(cors({
-    origin: 'http://localhost:3000',
+    origin: 'http://localhost:3080',
     credentials: true,
 }));
 app.use(express.json());
@@ -44,6 +45,7 @@ app.get('/',(req,res)=>{
 });
 app.use('/user',userRouter);
 app.use('/post',postRouter);
+app.use('/posts',postsRouter);
 
 app.listen(3085,()=>{
     console.log(`백엔드 서버 ${3085}번 포트에서 작동중.`);

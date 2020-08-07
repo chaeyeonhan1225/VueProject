@@ -56,10 +56,21 @@ export const mutations = {
 
 // 비동기적 작업
 export const actions = {
+    loadUser({ commit }) {
+        this.$axios.get('/user',{
+            withCredentials: true,
+        })
+        .then((res)=>{
+            commit('setMe',res.data);
+        })
+        .catch((err)=>{
+            console.error(err);
+        });
+    },
     signUp({ commit,state }, payload) {
         // console.log(context);
         // 서버에 회원가입 요청을 보내는 부분
-        this.$axios.post('http://localhost:3085/user',{
+        this.$axios.post('/user',{
             email: payload.email,
             password: payload.passwd,
             nickname: payload.nickname
@@ -77,7 +88,7 @@ export const actions = {
         });  // REST API
     },
     logIn({ commit }, payload) {
-        this.$axios.post('http://localhost:3085/user/login',{
+        this.$axios.post('/user/login',{
             email: payload.email,
             password: payload.password,
         },{
@@ -92,7 +103,7 @@ export const actions = {
         });
     },
     logOut({ commit },payload) {
-        this.$axios.post('http://localhost:3085/user/logout',{},{
+        this.$axios.post('/user/logout',{},{
             withCredentials: true,
         })
         .then((res)=>{

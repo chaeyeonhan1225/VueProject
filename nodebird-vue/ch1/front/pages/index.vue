@@ -28,7 +28,7 @@ export default {
     }
   },
   fetch({ store }){
-    store.dispatch('posts/loadPosts');
+    return store.dispatch('posts/loadPosts'); // return은 완료를 기다린다.중요 !!
   },
   mounted(){
     window.addEventListener('scroll',this.onScroll);

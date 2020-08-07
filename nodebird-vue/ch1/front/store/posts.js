@@ -20,65 +20,150 @@ export const mutations = {
     const index = state.mainPosts.findIndex(v => v.id === payload.postId);
     state.mainPosts[index].Comments.unshift(payload);
   },
-  loadPosts(state){
-    const diff = totalPosts - state.mainPosts.length; // 아직 안 불러온 게시글 수
-    const fakePosts = Array( diff > limit ? limit : diff ).fill().map(x => ({
-      id:Math.random().toString(),
-      User: {
-        id: 1,
-        nickname: '제로초',
-      },
-      content: `Hello infinite scrolling~ ${Math.random()}`,
-      Comments: [],
-      Images: [], 
-    }));
-    state.mainPosts = state.mainPosts.concat(fakePosts);
-    state.hasMorePost = fakePosts.length === limit;
+  loadComments(state,payload) {
+    const index = state.mainPosts.findIndex(v => v.id === payload.postId);
+    state.mainPosts[index].Comments = payload;
+  },
+  loadPosts(state,payload){
+    if(payload.reset){
+      state.mainPosts = payload.data;
+    } else {
+      state.mainPosts = state.mainPosts.concat(payload);
+    }
+    state.hasMorePost = payload.length === limit;
   },
   concatImagePaths(state,payload) {
     state.imagePaths = state.imagePaths.concat(payload);
   },
   removeImagePath(state,payload) {
     state.imagePaths.splice(payload,1);
+  },
+  unlikePost(state,payload) {
+    const index = state.mainPosts.findIndex(v => v.id === payload.postId);
+    const userIndex = state.mainPosts[index].Likers.findIndex(v => v.id === payload.userId);
+    state.mainPosts[index].Likers.splice(userIndex,1);
+  },
+  likePost(state,payload) {
+    const index = state.mainPosts.findIndex(v => v.id === payload.postId);
+    state.mainPosts[index].Likers.push({
+      id:payload.userId,
+    });
   }
 };
 
 export const actions = {
-    add({ commit },payload){
+    add({ commit, state },payload){
+      console.log('add', payload);
       // 서버에 게시글 등록 요청 보냄
-      this.$axios.post('http://localhost:3085/post',{
+      this.$axios.post('/post',{
         content: payload.content,
-        imagePaths: state.imagePaths,
+        image: state.imagePaths,
       },{
         withCredentials: true
       })
       .then((res)=>{
-        commit('addMainPost',payload);
+        console.log(res.data);
+        commit('addMainPost',res.data);
       })
-      .catch(()=>{
-
+      .catch((err)=>{
+        console.error(err);
       });
     },
     remove({ commit },payload) {
-      commit('removeMainPost',payload);
+      this.$axios.delete(`/post/${payload.postId}`,{
+        withCredentials: true,
+      })
+        .then(()=>{
+          commit('removeMainPost',payload)
+        })
     },
-    addComment({ commit },payload) {
-      commit('addComment',payload);
+    addComment({ commit, state },payload) {
+      console.log('postId: ',payload);
+      // console.log(state.mainPosts);
+      this.$axios.post(`/post/${payload.postId}/comment`,{
+        content: payload.content,
+      },{
+        withCredentials: true
+      })
+      .then((res)=>{  
+        commit('addComment',res.data);
+      })
+      .catch((err)=>{
+        console.error(err);
+      });
+    },
+    loadComments({ commit },payload) {
+      this.$axios.get(`/post/${payload.postId}/comments`)
+        .then((res)=>{
+          commit('loadComments',{
+            postId: payload.postId,
+            data: res.data,
+          });
+        })
+        .catch((err)=>{
+          console.error(err);
+        });
     },
     loadPosts({ commit,state },payload){
       if(state.hasMorePost){
-        commit('loadPosts');
+        this.$axios.get(`/posts?offset=${state.mainPosts.length}?limit=10`)
+          .then((res)=>{
+            commit('loadPosts',res.data);
+          })
+          .catch((err)=>{
+            console.error(err);
+          });
       }
     },
     uploadImages({ commit },payload) {
-      this.$axios.post('http://localhost:3085/post/images',payload,{
+      this.$axios.post('/post/images',payload,{
         withCredentials: true,  // 로그인한 사용자 인증 받아야함
       })
       .then((res)=>{
         commit('concatImagePaths',res.data);
       })
-      .catch(()=>{
-
+      .catch((err)=>{
+        console.error(err);
+      });
+    },
+    retweet({ commit },payload){
+      this.$axios.post(`/post/${payload.postId}/retweet`,{},{
+        withCredentials: true,
+      })
+      .then((res)=>{
+        commit('addMainPost',res.data);
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+    },
+    likePost({ commit },payload) {
+      this.$axios.post(`/post/${payload.postId}/like`,{},{
+        withCredentials: true,
+      })
+      .then((res)=>{
+        commit('likePost',{
+          userId: res.data.userId,
+          postId: payload.postId,
+        });
+      })
+      .catch((err)=>{
+        console.error(err);
+      })
+    },
+    unlikePost({ commit }, payload) {
+      // delete는 두번째 인자가 없다!
+      this.$axios.delete(`/post/${payload.postId}/like`,{
+        withCredentials: true,
+      })
+      .then((res)=>{
+        commit('unlikePost',{
+          userId: res.data.userId,
+          postId: payload.postId,
+        });
+      })
+      .catch((err)=>{
+        console.error(err);
       })
     }
 };

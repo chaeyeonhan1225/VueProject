@@ -11,7 +11,10 @@ module.exports = () => {
     passport.deserializeUser(async(id,done)=>{  // id로 User를 찾는다.
         console.log("deserializeUser실행!");
         try {
-            const user = await db.User.findOne({ where: { id }});
+            const user = await db.User.findOne({ 
+                where: { id },
+                attributes: ['id','nickname']
+            });
             console.log(user);
             return done(null,user); // req.user, req.isAuthenticated() === true
         } catch(err) {
