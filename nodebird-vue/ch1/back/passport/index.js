@@ -8,17 +8,29 @@ module.exports = () => {
     });
     // 로그인 후 모든 요청마다 실행됨
     // 캐싱을 통해 극복한다.
+    // req.user에 저장해주는 정보
     passport.deserializeUser(async(id,done)=>{  // id로 User를 찾는다.
         console.log("deserializeUser실행!");
         try {
             const user = await db.User.findOne({ 
                 where: { id },
-                attributes: ['id','nickname']
+                attributes: ['id','nickname'],
+                include: [{
+                    model: db.Post,
+                    attributes: ['id'],
+                },{
+                    model: db.User,
+                    as: 'Followings',
+                    attributes: ['id'],
+                },{
+                    model: db.User,
+                    as: 'Followers',
+                    attributes: ['id']
+                }],
             });
             console.log(user);
             return done(null,user); // req.user, req.isAuthenticated() === true
         } catch(err) {
-            console.log('왜 오류가 나지 ㅠ');
             console.error(err);
             return done(err);
         }

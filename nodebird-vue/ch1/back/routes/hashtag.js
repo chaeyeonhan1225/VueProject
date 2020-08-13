@@ -1,12 +1,10 @@
 const express = require('express');
-const multer = require('multer');
-const path = require('path');
 
 const db = require('../models');
 
 const router = express.Router();
 
-router.get('/',async (req, res, next)=> {
+router.get('/:tag',async (req, res, next)=> {   // GET/hashtag/:tag?lastId=10&limit=10
     try {
         let where = {};
         if(parseInt(req.query.lastId,10)){
@@ -19,6 +17,9 @@ router.get('/',async (req, res, next)=> {
         const posts = await db.Post.findAll({
             where,
             include: [{
+                model: db.Hashtag,
+                where: { name: decodeURIComponent(req.params.tag) },
+            },{
                 model: db.User,
                 attributes: ['id','nickname'],
             },{
@@ -38,10 +39,9 @@ router.get('/',async (req, res, next)=> {
                 }]
             }],
             order: [[ 'createdAt', 'DESC' ]],
-           
             limit: parseInt(req.query.limit,10) || 10,
         });
-        res.json(posts);
+        return res.json(posts);
     } catch(err) {
         console.error(err);
         return next(err);

@@ -1,11 +1,11 @@
+import Vue from 'vue';
+import throttle from 'lodash.throttle';
+
 export const state = () => ({
   mainPosts: [],
   hasMorePost: true,
   imagePaths: [],
 });
-
-const totalPosts = 51;
-const limit = 10;
 
 export const mutations = {
   addMainPost(state,payload){
@@ -22,15 +22,16 @@ export const mutations = {
   },
   loadComments(state,payload) {
     const index = state.mainPosts.findIndex(v => v.id === payload.postId);
-    state.mainPosts[index].Comments = payload;
+    Vue.set(state.mainPosts[index], 'Comments', payload.data);
+    console.log(state.mainPosts[index]);
   },
   loadPosts(state,payload){
     if(payload.reset){
       state.mainPosts = payload.data;
     } else {
-      state.mainPosts = state.mainPosts.concat(payload);
+      state.mainPosts = state.mainPosts.concat(payload.data);
     }
-    state.hasMorePost = payload.length === limit;
+    state.hasMorePost = payload.data.length === 10;
   },
   concatImagePaths(state,payload) {
     state.imagePaths = state.imagePaths.concat(payload);
@@ -62,7 +63,6 @@ export const actions = {
         withCredentials: true
       })
       .then((res)=>{
-        console.log(res.data);
         commit('addMainPost',res.data);
       })
       .catch((err)=>{
@@ -76,10 +76,11 @@ export const actions = {
         .then(()=>{
           commit('removeMainPost',payload)
         })
+        .catch((err)=>{
+          console.error(err);
+        })
     },
-    addComment({ commit, state },payload) {
-      console.log('postId: ',payload);
-      // console.log(state.mainPosts);
+    addComment({ commit },payload) {
       this.$axios.post(`/post/${payload.postId}/comment`,{
         content: payload.content,
       },{
@@ -104,17 +105,74 @@ export const actions = {
           console.error(err);
         });
     },
-    loadPosts({ commit,state },payload){
-      if(state.hasMorePost){
-        this.$axios.get(`/posts?offset=${state.mainPosts.length}?limit=10`)
-          .then((res)=>{
-            commit('loadPosts',res.data);
-          })
-          .catch((err)=>{
-            console.error(err);
-          });
+    loadPosts: throttle(async function({ commit,state },payload){
+        try {
+          if(payload && payload.reset) {
+            const res = await this.$axios.get(`/posts?limit=10`);
+            commit('loadPosts',{
+              data: res.data,
+              reset: true,
+            });
+            return;
+          }
+          if(state.hasMorePost){
+            const lastPost = state.mainPosts[state.mainPosts.length-1];
+            const res = await this.$axios.get(`/posts?lastId=${lastPost && lastPost.id}&limit=10`);
+            commit('loadPosts',{
+              data: res.data,
+            });
+            return;
+          } 
+        } catch (err) {
+          console.error(err);
+        }
+      },2000),
+    loadUserPosts: throttle(async function({ commit,state },payload){
+      try {
+          if(payload && payload.reset){
+            const res = await this.$axios.get(`/user/${payload.userId}/posts?limit=10`);
+            commit('loadPosts',{
+              data: res.data,
+              reset: true,
+            });
+            return;
+          }
+          if(state.hasMorePost){
+            const lastPost = state.mainPosts[state.mainPosts.length-1];
+            const res = await this.$axios.get(`/user/${payload.userId}/posts?lastId=${lastPost && lastPost.id}?limit=10`);
+            commit('loadPosts',{
+              data: res.data,
+            });
+            return;
+          } 
       }
-    },
+      catch (err) {
+        console.error(err);
+      }
+    },3000),
+    loadHashtagPosts: throttle(async function({ commit,state },payload){
+      try {
+          if(payload && payload.reset){
+            const res = await this.$axios.get(`/hashtag/${payload.hashtag}/posts?limit=10`);
+            commit('loadPosts',{
+              data: res.data,
+              reset: true,
+            });
+            return;
+          }
+          if(state.hasMorePost){
+            const lastPost = state.mainPosts[state.mainPosts.length - 1];
+            const res = await this.$axios.get(`/hashtag/${payload.hashtag}?lastId=${lastPost && lastPost.id}&limit=10`);
+            commit('loadPosts',{
+              data: res.data,
+            });
+            return;
+          } 
+      }
+      catch (err) {
+        console.error(err);
+      }
+    },3000),
     uploadImages({ commit },payload) {
       this.$axios.post('/post/images',payload,{
         withCredentials: true,  // 로그인한 사용자 인증 받아야함
@@ -135,6 +193,7 @@ export const actions = {
       })
       .catch((err) => {
         console.error(err);
+        alert(err.response.data);
       });
     },
     likePost({ commit },payload) {

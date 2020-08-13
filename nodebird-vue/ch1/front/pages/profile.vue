@@ -6,10 +6,10 @@
             <v-subheader>내 프로필</v-subheader>
             <v-form v-model='valid' @submit.prevent="onChangeNickname">
                 <v-text-field
-                v-model="nickname"
-                label="닉네임"
-                :rules="nicknameRules"
-                required
+                  v-model="nickname"
+                  label="닉네임"
+                  :rules="nicknameRules"
+                  required
                 />
                 <v-btn color="blue" type="submit">수정</v-btn>
             </v-form>
@@ -41,9 +41,6 @@ export default {
     FollowList
   },
   computed: {
-    me() {
-      return this.$store.state.users.me;
-    },
     followerList() {
       return this.$store.state.users.followerList;
     },
@@ -58,8 +55,10 @@ export default {
     }
   },
   fetch({ store }){
-    store.dispatch('users/loadFollowers');
-    return store.dispatch('users/loadFollowings');
+    return Promise.all([
+      store.dispatch('users/loadFollowers',{ offset: 0 }),
+      store.dispatch('users/loadFollowings',{ offset: 0 })  // 항상 마지막은 return 해야 서버 사이드 렌더링이 된다.
+    ]);
   },
   head() {
     return {
@@ -77,17 +76,15 @@ export default {
   },
   methods: {
     onChangeNickname() {
-      console.log(this.me.FollowerList);
-      console.log(this.me.FollowingList);
       this.$store.dispatch('users/changeNickname',{
         nickname: this.nickname,
       })
     },
-    removeFollowing(id){
-      this.$store.dispatch('users/removeFollowing',{ id });
+    removeFollowing(userId){
+      this.$store.dispatch('users/unfollow',{ userId });
     },
-    removeFollower(id) {
-      this.$store.dispatch('users/removeFollower',{ id });
+    removeFollower(userId) {
+      this.$store.dispatch('users/removeFollower',{ userId });
     },
     loadMoreFollowers(){
       this.$store.dispatch('users/loadFollowers');

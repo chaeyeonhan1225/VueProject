@@ -30,7 +30,7 @@ router.post('/images', isLoggedIn, upload.array('image'),(req,res) => {
     res.json(req.files.map(v=>v.filename));
 });
 
-router.post('/',isLoggedIn,async (req,res)=>{
+router.post('/',isLoggedIn,async (req,res,next)=>{
     try {
         const hashtags = req.body.content.match(/#[^\s#]+/g);
         const newPost = await db.Post.create({
@@ -70,7 +70,7 @@ router.post('/',isLoggedIn,async (req,res)=>{
         return res.json(fullPost);
     } catch (err) {
         console.error(err);
-        next(Err);
+        next(err);
     }
 });
 
@@ -81,7 +81,7 @@ router.delete('/:id', async (req,res,next)=>{
                 id: req.params.id
             }
         });
-        return res.send('삭제했습니다.');
+        res.send('삭제했습니다.');
     } catch(err) {
         console.error(err);
         return next(err);
@@ -104,7 +104,7 @@ router.get('/:id/comments',async (req,res,next) => {
             }],
             order: [['createdAt','ASC']],   // 무조건 이차원 배열 (또 다른 조건이 있을 수 있기 때문)
         });
-        return res.json(comments);
+       res.json(comments);
     } catch(err) {
         console.error(err);
         next(err);        
@@ -169,7 +169,7 @@ router.post('/:id/retweet',isLoggedIn, async (req,res,next)=>{
             RetweetId: retweetTargetId, // 원본 아이디
             content: 'retweet',
         });
-        const retweetwithPrevPost = await db.Post.findOne({
+        const retweetWithPrevPost = await db.Post.findOne({
             where: { id: retweet.id },
             include: [{
                 model: db.User,

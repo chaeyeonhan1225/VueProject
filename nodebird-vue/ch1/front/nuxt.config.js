@@ -8,7 +8,6 @@ module.exports = {
   buildModules: [
     '@nuxtjs/vuetify'
   ],
-  plugins: [],
   vuetify: {
   
   },
@@ -16,5 +15,8 @@ module.exports = {
     browserBaseURL : 'http://localhost:3085',
     baseURL: 'http://localhost:3085',
     https: false,
+  },
+  server: {
+    port: '3080',
   }
 };

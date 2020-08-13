@@ -56,8 +56,8 @@ export default{
               this.successMessages = '댓글이 작성되었습니다.';
               this.hideDetails = false;
           })
-          .catch(() => {
-            
+          .catch((err) => {
+            console.error(err);
           })
       }
     }
